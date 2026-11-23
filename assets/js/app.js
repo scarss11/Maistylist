@@ -100,10 +100,18 @@ function pintarHoras() {
 }
 $('#horas').onclick = e => { const b = e.target.closest('.hora'); if (!b) return; R.hora = +b.dataset.h; pintarHoras(); resumen(); };
 
-/* ----- Datos, resumen y envío ----- */
+/* ----- Datos, resumen y factura ----- */
 const prev = ls.get('cliente') || {};
 $('#nombre').value = prev.nombre || ''; $('#tel').value = prev.tel || '';
 const fechaLarga = f => { const d = DIAS.find(x => iso(x) === f); return DS[d.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + d.getDate() + ' de ' + MS[d.getMonth()]; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const telVista = t => t.length === 10 ? t.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3') : t;
+const numFactura = () => {
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return 'MS-' + p(d.getDate()) + p(d.getMonth()+1) + String(d.getFullYear()).slice(2) + '-' + Math.floor(100 + Math.random()*900);
+};
+let msgListo = '', facturaPendiente = null;
+
 function resumen() {
   const s = R.sel.map(id => SRV[id]), tot = s.reduce((a,x) => a + x.precio, 0), min = s.reduce((a,x) => a + x.min, 0);
   $('#res').classList.toggle('ver', s.length > 0 || window.scrollY > innerHeight * .6);
@@ -112,8 +120,163 @@ function resumen() {
   const listo = s.length && R.fecha && R.hora != null;
   $('#confirmar').disabled = !s.length;
   $('#confirmar').textContent = listo ? 'Confirmar' : !R.fecha ? 'Elegir día' : 'Elegir hora';
+  $('#limpiar').hidden = !s.length;
 }
 addEventListener('scroll', resumen, { passive:true });
+$('#limpiar').onclick = () => {
+  R.sel = []; R.fecha = null; R.hora = null;
+  document.querySelectorAll('.dia.on').forEach(x => x.classList.remove('on'));
+  $('#horas').innerHTML = '<div class="vacio">Primero elige un día.</div>';
+  pintarLista(); resumen();
+};
+
+function datosFactura() {
+  const nombre = $('#nombre').value.trim(), tel = $('#tel').value.replace(/\D/g,'');
+  const lineas = R.sel.map(id => { const x = SRV[id], cat = CATS.find(c => c.id === x.cat); return { ...x, catNombre: cat.nombre }; });
+  const total = lineas.reduce((a,x) => a + x.precio, 0), minutos = lineas.reduce((a,x) => a + x.min, 0);
+  return {
+    num: numFactura(), nombre, tel, telVista: telVista(tel),
+    fecha: fechaLarga(R.fecha), hora: h12(R.hora), duracion: dur(minutos),
+    notas: $('#notas').value.trim(), lineas, total
+  };
+}
+function armarMensaje(d) {
+  const partes = [
+    'Hola MAISTYLIST, quiero reservar mi cita.',
+    '',
+    'Factura ' + d.num,
+    'Nombre: ' + d.nombre,
+    'Celular: ' + d.telVista,
+    'Fecha: ' + d.fecha,
+    'Hora: ' + d.hora + ' · ' + d.duracion,
+    '',
+    ...d.lineas.map(x => '• ' + x.nombre + ' — ' + pesos(x.precio))
+  ];
+  if (d.notas) partes.push('', 'Notas: ' + d.notas);
+  partes.push('', 'Total: ' + pesos(d.total), '', 'Adjunto la factura con el detalle de mi cita.');
+  return partes.join('\n');
+}
+function htmlFactura(d) {
+  const filas = d.lineas.map(x => `<tr><td><div class="lin">${img(x.cat,'mini',x.nombre)}<span><b>${esc(x.nombre)}</b><small>${esc(x.catNombre)} · ${dur(x.min)}</small></span></div></td><td class="imp">${pesos(x.precio)}</td></tr>`).join('');
+  const notas = d.notas ? `<p class="fac-notas"><b>Notas.</b> ${esc(d.notas)}</p>` : '';
+  return `<div class="blob b1"></div><div class="blob b2"></div>
+    <div class="fac-head"><h4 id="capaT">FACTURA</h4><img class="fac-logo" src="assets/img/marca/logo-transparente.png" alt="MAISTYLIST"></div>
+    <div class="fac-meta">
+      <div><small>DATOS DEL CLIENTE</small><b>${esc(d.nombre)}</b><span>WhatsApp ${esc(d.telVista)}</span></div>
+      <div class="fac-num"><div><small>Nº FACTURA</small><b>${esc(d.num)}</b></div><div><small>FECHA</small><b>${esc(d.fecha)}</b></div><div><small>HORA</small><b>${esc(d.hora)}</b></div></div>
+    </div>
+    <table><thead><tr><th>DESCRIPCIÓN</th><th>IMPORTE</th></tr></thead><tbody>${filas}</tbody></table>
+    ${notas}
+    <div class="fac-tot"><div><span>Duración</span><b>${esc(d.duracion)}</b></div><div class="gran"><span>TOTAL</span><b>${pesos(d.total)}</b></div></div>
+    <div class="fac-foot"><div><b>MAISTYLIST</b><span>Estilista integral</span><span>304 207 5328</span></div><div class="gracias"><em>Gracias</em><span>Tu cita queda por confirmar</span></div></div>`;
+}
+
+function cargarSrc(src) {
+  return new Promise(resolve => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => resolve(null); im.src = src; });
+}
+function cargarFoto(id) {
+  return cargarSrc(FOTO(id)).then(im => im || cargarSrc(RESPALDO(id)));
+}
+function trazo(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+}
+function recortar(ctx, texto, max) {
+  if (ctx.measureText(texto).width <= max) return texto;
+  let t = texto; while (t && ctx.measureText(t + '…').width > max) t = t.slice(0,-1); return t + '…';
+}
+function dibujarFoto(ctx, im, x, y, w, h, radio) {
+  ctx.save(); trazo(ctx, x, y, w, h, radio); ctx.clip();
+  if (!im) { ctx.fillStyle = '#f6e4e9'; ctx.fillRect(x, y, w, h); ctx.restore(); return; }
+  const ir = im.width / im.height, r = w / h; let dw, dh, dx, dy;
+  if (ir > r) { dh = h; dw = h * ir; dx = x - (dw - w) / 2; dy = y; }
+  else { dw = w; dh = w / ir; dx = x; dy = y - (dh - h) / 2; }
+  ctx.drawImage(im, dx, dy, dw, dh); ctx.restore();
+  ctx.save(); ctx.strokeStyle = 'rgba(184,145,58,.45)'; ctx.lineWidth = 2; trazo(ctx, x, y, w, h, radio); ctx.stroke(); ctx.restore();
+}
+async function dibujarFactura(d) {
+  try { await document.fonts.load('64px "Great Vibes"'); await document.fonts.load('600 72px Jost'); } catch (e) {}
+  const fotos = await Promise.all(d.lineas.map(x => cargarFoto(x.cat)));
+  const logo = await cargarSrc('assets/img/marca/logo-transparente.png');
+  const W = 1000, pad = 56, rowH = 92;
+  const H = 430 + d.lineas.length * rowH + (d.notas ? 70 : 0) + 230;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * 2; canvas.height = H * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#f7e3e8'; ctx.beginPath(); ctx.ellipse(W - 30, 20, 250, 170, -0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f3c9d4'; ctx.beginPath(); ctx.ellipse(W + 10, -20, 150, 110, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f8e7eb'; ctx.beginPath(); ctx.ellipse(-10, H - 30, 230, 160, 0.4, 0, Math.PI * 2); ctx.fill();
+  if (logo) { const lh = 108, lw = lh * logo.width / logo.height; ctx.drawImage(logo, W - pad - lw, 28, lw, lh); }
+  ctx.fillStyle = '#161616'; ctx.font = '600 78px Jost, sans-serif'; ctx.textBaseline = 'top';
+  ctx.fillText('FACTURA', pad, 48);
+  const metaY = 176;
+  ctx.fillStyle = '#c48998'; ctx.font = '600 13px Jost, sans-serif';
+  ctx.fillText('DATOS DEL CLIENTE', pad, metaY);
+  ctx.fillStyle = '#161616'; ctx.font = '600 24px Jost, sans-serif';
+  ctx.fillText(recortar(ctx, d.nombre, 460), pad, metaY + 24);
+  ctx.fillStyle = '#5c5360'; ctx.font = '16px Jost, sans-serif';
+  ctx.fillText('WhatsApp ' + d.telVista, pad, metaY + 56);
+  const derecha = [ ['Nº FACTURA', d.num], ['FECHA', d.fecha], ['HORA', d.hora] ];
+  derecha.forEach((par, i) => {
+    const y = metaY + i * 52;
+    ctx.fillStyle = '#c48998'; ctx.font = '600 13px Jost, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(par[0], W - pad, y);
+    ctx.fillStyle = '#161616'; ctx.font = '600 20px Jost, sans-serif';
+    ctx.fillText(recortar(ctx, par[1], 420), W - pad, y + 22);
+  });
+  ctx.textAlign = 'left';
+  let y = 360;
+  trazo(ctx, pad, y, W - pad * 2, 44, 8); ctx.fillStyle = '#e8b7c3'; ctx.fill();
+  ctx.fillStyle = '#3a2430'; ctx.font = '600 13px Jost, sans-serif';
+  ctx.fillText('DESCRIPCIÓN', pad + 16, y + 14);
+  ctx.textAlign = 'right'; ctx.fillText('IMPORTE', W - pad - 16, y + 14); ctx.textAlign = 'left';
+  y += 44;
+  d.lineas.forEach((linea, i) => {
+    dibujarFoto(ctx, fotos[i], pad + 8, y + 16, 60, 60, 12);
+    ctx.fillStyle = '#161616'; ctx.font = '600 20px Jost, sans-serif'; ctx.textBaseline = 'top';
+    ctx.fillText(recortar(ctx, linea.nombre, W - pad * 2 - 240), pad + 84, y + 24);
+    ctx.fillStyle = '#7d7080'; ctx.font = '15px Jost, sans-serif';
+    ctx.fillText(linea.catNombre + ' · ' + dur(linea.min), pad + 84, y + 50);
+    ctx.fillStyle = '#161616'; ctx.font = '600 20px Jost, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(pesos(linea.precio), W - pad - 8, y + 34); ctx.textAlign = 'left';
+    ctx.strokeStyle = '#f3e3e8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, y + rowH); ctx.lineTo(W - pad, y + rowH); ctx.stroke();
+    y += rowH;
+  });
+  if (d.notas) {
+    y += 18; ctx.fillStyle = '#5c5360'; ctx.font = '16px Jost, sans-serif';
+    ctx.fillText(recortar(ctx, 'Notas: ' + d.notas, W - pad * 2), pad, y); y += 36;
+  }
+  y += 22;
+  ctx.textAlign = 'right'; ctx.fillStyle = '#5c5360'; ctx.font = '16px Jost, sans-serif';
+  ctx.fillText('Duración', W - pad - 180, y); ctx.fillStyle = '#161616'; ctx.font = '600 16px Jost, sans-serif'; ctx.fillText(d.duracion, W - pad, y);
+  y += 18; ctx.strokeStyle = '#f0dde3'; ctx.beginPath(); ctx.moveTo(W - pad - 250, y); ctx.lineTo(W - pad, y); ctx.stroke();
+  y += 14; ctx.fillStyle = '#161616'; ctx.font = '600 22px Jost, sans-serif'; ctx.fillText('TOTAL', W - pad - 180, y);
+  ctx.fillStyle = '#8a6230'; ctx.fillText(pesos(d.total), W - pad, y);
+  ctx.textAlign = 'left';
+  const fy = H - 150;
+  ctx.fillStyle = '#161616'; ctx.font = '600 14px Jost, sans-serif'; ctx.fillText('MAISTYLIST', pad, fy);
+  ctx.fillStyle = '#6d6470'; ctx.font = '15px Jost, sans-serif';
+  ctx.fillText('Estilista integral', pad, fy + 24); ctx.fillText('304 207 5328', pad, fy + 46);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#2a2a2a'; ctx.font = '64px "Great Vibes", cursive';
+  ctx.fillText('Gracias', W - pad, fy - 8);
+  ctx.font = '14px Jost, sans-serif'; ctx.fillStyle = '#6d6470';
+  ctx.fillText('Tu cita queda por confirmar', W - pad, fy + 58);
+  ctx.textAlign = 'left';
+  return canvas;
+}
+function descargar(blob, nombre) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function abrirWhatsApp(texto) {
+  const url = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(texto);
+  window.open(url, '_blank', 'noopener');
+}
+
 $('#confirmar').onclick = () => {
   if (!R.fecha) return $('#dias').closest('.sec').scrollIntoView({ behavior:'smooth' });
   if (R.hora == null) return $('#horas').closest('.sec').scrollIntoView({ behavior:'smooth' });
@@ -122,16 +285,44 @@ $('#confirmar').onclick = () => {
     $('#err').textContent = nombre.length < 3 ? 'Escribe tu nombre para apartar el cupo.' : 'Escribe un celular válido para confirmarte.';
     $('#form').closest('.sec').scrollIntoView({ behavior:'smooth' }); return;
   }
-  $('#err').textContent = ''; ls.set('cliente', { nombre, tel });
-  const s = R.sel.map(id => SRV[id]), tot = s.reduce((a,x) => a + x.precio, 0), min = s.reduce((a,x) => a + x.min, 0);
-  const notas = $('#notas').value.trim();
-  $('#detalle').innerHTML = s.map(x => `<dt>${x.nombre}</dt><dd>${pesos(x.precio)}</dd>`).join('') +
-    `<dt>Fecha</dt><dd>${fechaLarga(R.fecha)}</dd><dt>Hora</dt><dd>${h12(R.hora)} · ${dur(min)}</dd><dt>A nombre de</dt><dd>${nombre.replace(/</g,'&lt;')}</dd>` +
-    `<dt class="tot">Total</dt><dd class="tot">${pesos(tot)}</dd>`;
-  const msg = `Hola MAISTYLIST, quiero reservar:\n${s.map(x => '• ' + x.nombre + ' (' + pesos(x.precio) + ')').join('\n')}\n📅 ${fechaLarga(R.fecha)}, ${h12(R.hora)}\n👤 ${nombre} · ${tel}${notas ? '\n📝 ' + notas : ''}\nTotal: ${pesos(tot)}`;
-  $('#enviar').href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
-  $('#copiar').onclick = async () => { try { await navigator.clipboard.writeText(msg); $('#copiar').textContent = 'Mensaje copiado'; } catch(e) { $('#copiar').textContent = 'No se pudo copiar'; } setTimeout(() => $('#copiar').textContent = 'Copiar mensaje', 2000); };
+  $('#err').textContent = '';
+  const d = datosFactura();
+  ls.set('cliente', { nombre, tel });
+  ls.set('reserva', { num: d.num, nombre, tel, fecha: R.fecha, hora: R.hora, servicios: d.lineas.map(x => x.id), total: d.total });
+  msgListo = armarMensaje(d);
+  $('#factura').innerHTML = htmlFactura(d);
+  $('#facEstado').textContent = '';
+  $('#enviar').disabled = false; $('#enviar').textContent = 'Enviar factura por WhatsApp';
+  facturaPendiente = dibujarFactura(d);
   $('#capa').classList.add('ver'); $('#enviar').focus();
+};
+$('#enviar').onclick = async () => {
+  $('#enviar').disabled = true; $('#enviar').textContent = 'Preparando factura…'; $('#facEstado').textContent = '';
+  try {
+    const canvas = await facturaPendiente;
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const archivo = new File([blob], 'Factura-MAISTYLIST.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+      try {
+        await navigator.share({ files: [archivo], text: msgListo, title: 'Factura MAISTYLIST' });
+        $('#facEstado').textContent = 'Si elegiste WhatsApp, la factura va en el chat con el mensaje.';
+        return;
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    abrirWhatsApp(msgListo);
+    descargar(blob, archivo.name);
+    $('#facEstado').textContent = 'Se abrió WhatsApp con el mensaje al 304 207 5328. La factura se descargó: adjúntala en el chat.';
+  } catch (e) {
+    abrirWhatsApp(msgListo);
+    $('#facEstado').textContent = 'Se abrió WhatsApp con el mensaje. No se pudo preparar la imagen de la factura.';
+  } finally {
+    $('#enviar').disabled = false; $('#enviar').textContent = 'Enviar factura por WhatsApp';
+  }
+};
+$('#copiar').onclick = async () => {
+  try { await navigator.clipboard.writeText(msgListo); $('#copiar').textContent = 'Mensaje copiado'; }
+  catch (e) { $('#copiar').textContent = 'No se pudo copiar'; }
+  setTimeout(() => $('#copiar').textContent = 'Copiar mensaje', 2000);
 };
 const cerrar = () => { $('#capa').classList.remove('ver'); $('#confirmar').focus(); };
 $('#cerrar').onclick = cerrar;

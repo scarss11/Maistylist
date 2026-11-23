@@ -14,7 +14,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Jost:wght@400;500;600&family=Marcellus&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
 <body>
@@ -26,12 +26,12 @@
   </header>
   <div class="track" id="track" tabindex="0" aria-roledescription="carrusel"></div>
   <div class="barra" aria-hidden="true"><i id="progreso"></i></div>
-  <div class="pista" id="pista"><i></i>Desliza para ver más</div>
+  <div class="pista" id="pista"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6.5 14.5 12 9 17.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></i>Desliza para ver más</div>
   <div class="rail">
     <div class="thumbs" id="thumbs" role="tablist" aria-label="Elige un servicio"></div>
     <div class="flechas">
-      <button class="fl" id="ant" aria-label="Servicio anterior">‹</button>
-      <button class="fl" id="sig" aria-label="Servicio siguiente">›</button>
+      <button class="fl" id="ant" aria-label="Servicio anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6.5 9 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="fl" id="sig" aria-label="Servicio siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5 15 12l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   </div>
 </section>
@@ -78,18 +78,20 @@
 
 <div class="res" id="res" aria-live="polite">
   <div class="txt"><b id="resT">Elige un servicio</b><small id="resS"></small></div>
-  <button class="btn oro" id="confirmar" disabled>Continuar</button>
+  <div class="res-acc">
+    <button class="btn oro" id="confirmar" type="button" disabled>Continuar</button>
+    <button class="xsel" id="limpiar" type="button" hidden aria-label="Cerrar esta selección"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </div>
 </div>
 
-<div class="capa" id="capa" role="dialog" aria-modal="true" aria-labelledby="capaT">
+<div class="capa" id="capa" role="dialog" aria-modal="true" aria-label="Factura de tu cita">
   <div class="hoja">
-    <h4 id="capaT">Revisa tu cita</h4>
-    <div style="color:var(--sub)">Al enviarla por WhatsApp te confirmamos el cupo.</div>
-    <dl id="detalle"></dl>
+    <article class="factura" id="factura" aria-labelledby="capaT"></article>
     <div class="acc">
-      <a class="btn wa" id="enviar" target="_blank" rel="noopener">Enviar por WhatsApp</a>
-      <button class="btn vid" id="copiar">Copiar mensaje</button>
-      <button class="cerrar" id="cerrar">Volver y editar</button>
+      <button class="btn wa" id="enviar" type="button">Enviar factura por WhatsApp</button>
+      <button class="btn vid" id="copiar" type="button">Copiar mensaje</button>
+      <button class="cerrar" id="cerrar" type="button">Volver y editar</button>
+      <p class="fac-estado" id="facEstado" role="status"></p>
     </div>
   </div>
 </div>

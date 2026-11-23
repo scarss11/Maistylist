@@ -4,7 +4,7 @@
 
 /* Número de WhatsApp del negocio con indicativo, sin espacios ni "+".
    Ej. '573001234567'. Vacío = la clienta elige a quién enviar el mensaje. */
-const WHATSAPP = '';
+const WHATSAPP = '573042075328';
 
 /* Horario de atención (minutos desde medianoche). 0 = domingo … 6 = sábado.
    null = cerrado ese día. */
