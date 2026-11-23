@@ -1,0 +1,6 @@
+Pon aquí las fotos nuevas (verticales 9:16, JPG) con estos nombres exactos:
+
+unas.jpg  pestanas.jpg  cejas.jpg  pedi.jpg  maquillaje.jpg  facial.jpg  cabello.jpg  depilacion.jpg
+
+Si falta alguna, la página usa automáticamente la de la carpeta "actuales".
+Los enlaces de Canva para descargar cada foto están en el README.md principal.

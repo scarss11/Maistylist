@@ -1,0 +1,12 @@
+{
+  "name": "MAISTYLIST · Reserva tu cita",
+  "short_name": "MAISTYLIST",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1e122c",
+  "theme_color": "#1e122c",
+  "icons": [
+    { "src": "assets/img/marca/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/marca/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

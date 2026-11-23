@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAISTYLIST · Reserva tu cita</title>
+<meta name="description" content="MAISTYLIST, estilista integral. Reserva en línea cabello, uñas, maquillaje, cejas, pestañas, facial, pedicure y depilación.">
+<meta name="theme-color" content="#1e122c">
+<meta property="og:title" content="MAISTYLIST · Reserva tu cita">
+<meta property="og:description" content="Elige tu servicio, día y hora en un minuto.">
+<meta property="og:image" content="assets/img/marca/og-imagen.jpg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/marca/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/img/marca/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+
+<section class="hero" aria-label="Servicios">
+  <header class="top">
+    <a class="marca" href="#"><img src="assets/img/marca/logo-claro.png" alt="MAISTYLIST · Estilista Integral"></a>
+    <a class="btn vid" href="#reserva">Reservar cita</a>
+  </header>
+  <div class="track" id="track" tabindex="0" aria-roledescription="carrusel"></div>
+  <div class="barra" aria-hidden="true"><i id="progreso"></i></div>
+  <div class="pista" id="pista"><i></i>Desliza para ver más</div>
+  <div class="rail">
+    <div class="thumbs" id="thumbs" role="tablist" aria-label="Elige un servicio"></div>
+    <div class="flechas">
+      <button class="fl" id="ant" aria-label="Servicio anterior">‹</button>
+      <button class="fl" id="sig" aria-label="Servicio siguiente">›</button>
+    </div>
+  </div>
+</section>
+
+<main id="reserva">
+  <div class="intro" id="intro"></div>
+  <div class="cats" id="cats" aria-label="Categorías"></div>
+
+  <section class="sec">
+    <h3><em>1</em>Elige tu servicio</h3>
+    <p class="ayuda">Puedes sumar varios, incluso de otras categorías.</p>
+    <div class="lista" id="lista"></div>
+    <p class="nota">Servicios y precios de ejemplo: se conectan a tu catálogo real.</p>
+  </section>
+
+  <section class="sec">
+    <h3><em>2</em>¿Qué día?</h3>
+    <p class="ayuda">Los días con punto verde tienen cupo.</p>
+    <div class="dias" id="dias"></div>
+  </section>
+
+  <section class="sec">
+    <h3><em>3</em>¿A qué hora?</h3>
+    <div id="horas"><div class="vacio">Primero elige un día.</div></div>
+  </section>
+
+  <section class="sec">
+    <h3><em>4</em>Tus datos</h3>
+    <form class="campos" id="form" novalidate>
+      <label>Nombre completo<input id="nombre" autocomplete="name" placeholder="Ej. Laura Gómez"></label>
+      <label>Celular (WhatsApp)<input id="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 300 123 4567"></label>
+      <label>Notas para tu profesional (opcional)<textarea id="notas" placeholder="Diseño que te gusta, alergias, referencias…"></textarea></label>
+      <div class="err" id="err" role="alert"></div>
+    </form>
+  </section>
+
+  <div class="aviso"><b>Aviso:</b> solo pedimos abono en los servicios que lo indican, y solo a los datos que aparecen en esta página al reservar. Nunca te pedimos claves ni datos de tu banco. Si alguien te escribe desde otro número pidiendo dinero, no somos nosotros.</div>
+</main>
+
+<footer>
+  <img src="assets/img/marca/logo-transparente.png" alt="MAISTYLIST · Estilista Integral">
+  <div>Estilista integral · Cabello · Uñas · Maquillaje · Cejas · Pestañas · Facial</div>
+</footer>
+
+<div class="res" id="res" aria-live="polite">
+  <div class="txt"><b id="resT">Elige un servicio</b><small id="resS"></small></div>
+  <button class="btn oro" id="confirmar" disabled>Continuar</button>
+</div>
+
+<div class="capa" id="capa" role="dialog" aria-modal="true" aria-labelledby="capaT">
+  <div class="hoja">
+    <h4 id="capaT">Revisa tu cita</h4>
+    <div style="color:var(--sub)">Al enviarla por WhatsApp te confirmamos el cupo.</div>
+    <dl id="detalle"></dl>
+    <div class="acc">
+      <a class="btn wa" id="enviar" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+      <button class="btn vid" id="copiar">Copiar mensaje</button>
+      <button class="cerrar" id="cerrar">Volver y editar</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/servicios.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
